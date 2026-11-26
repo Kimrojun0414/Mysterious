@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>미스터리 거래소 | MYSTERY EXCHANGE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #09090b;
+      --bg-card: #121216;
+      --bg-elevated: #191920;
+      --gold: #d4af37;
+      --gold-bright: #f3d266;
+      --gold-dim: rgba(212, 175, 55, 0.22);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+    }
+    body {
+      background-color: var(--bg-main);
+      color: #f4f4f5;
+      font-family: 'Noto Sans KR', sans-serif;
+      background-image:
+        radial-gradient(circle at 15% 10%, rgba(212, 175, 55, 0.08), transparent 35%),
+        radial-gradient(circle at 85% 90%, rgba(212, 175, 55, 0.06), transparent 40%);
+      min-height: 100vh;
+    }
+    .font-mono-num { font-family: 'JetBrains Mono', monospace; }
+    .gold-border { border: 1px solid var(--gold-dim); }
+    .gold-glow { box-shadow: 0 0 24px rgba(212, 175, 55, 0.12); }
+    .btn-gold {
+      background: linear-gradient(135deg, #d4af37 0%, #b58d22 100%);
+      color: #09090b;
+      font-weight: 800;
+      transition: all 0.18s ease;
+    }
+    .btn-gold:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    .btn-gold:disabled { opacity: 0.4; cursor: not-allowed; }
+    .classified-blur {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(212, 175, 55, 0.12),
+        rgba(212, 175, 55, 0.12) 6px,
+        rgba(24, 24, 27, 0.9) 6px,
+        rgba(24, 24, 27, 0.9) 12px
+      );
+      border: 1px dashed rgba(212, 175, 55, 0.45);
+      color: #f3d266;
+      letter-spacing: 0.08em;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #09090b; }
+    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+  </style>
+</head>
+<body class="antialiased selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- 상단 공통 네비게이션 -->
+  <header class="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-zinc-950 font-black text-lg shadow-lg">
+          M
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-black tracking-tight text-amber-400">미스터리 거래소</h1>
+            <span id="daily-seed-badge" class="text-[11px] font-mono-num px-2 py-0.5 rounded bg-zinc-900 border border-amber-500/30 text-amber-300"></span>
+          </div>
+          <p class="text-[11px] text-zinc-400">THE DEVIL'S PLAN : DAILY ALGORITHM EXCHANGE</p>
+        </div>
+      </div>
+
+      <!-- 공식 로고 파형 그래프 미니 뷰 -->
+      <div class="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-zinc-800" title="미스터리 거래소 공식 로고 기준 파형 (8라운드 주기)">
+        <span class="text-[11px] text-zinc-400 font-medium">공식 로고 파형</span>
+        <svg id="header-logo-wave" width="140" height="28" viewBox="0 0 140 28"></svg>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="sync-status-badge" class="text-[11px] px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-emerald-400 font-medium">
+          ● 로컬 실시간 동기화
+        </span>
+        <button onclick="openFirebaseModal()" class="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 transition">
+          ⚙ Firebase 설정
+        </button>
+        <div id="user-pill" class="text-xs px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold">
+          게스트
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1. 홈 로비 화면 -->
+  <main id="screen-lobby" class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <!-- 히어로 & 계정/게임 시작 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- 왼쪽: 타이틀 & 게임 모드 선택 -->
+      <div class="lg:col-span-7 rounded-2xl bg-[#121216] gold-border gold-glow p-6 sm:p-8 flex flex-col justify-between space-y-6">
+        <div class="space-y-3">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
+            <span>매일 00:00 주가 변동 공식 로테이션</span>
+          </div>
+          <h2 class="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+            7개 종목의 숨겨진 알고리즘을 해독하라
+          </h2>
+          <p class="text-sm text-zinc-400 leading-relaxed">
+            초기 자본 <span class="text-amber-300 font-bold">100,000원</span>과 <span class="text-amber-300 font-bold">피스 2개</span>로 시작해 총 24라운드 동안 최고 자산을 달성하세요.
+            매일 날짜 시드에 따라 7개 종목의 변동 규칙 조합과 수치가 새롭게 바뀝니다.
+          </p>
+        </div>
+
+        <!-- 로고 파형 안내 박스 -->
+        <div class="rounded-xl bg-zinc-950/90 border border-zinc-800 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="text-xs font-bold text-amber-400 mb-1">미스터리 거래소 공식 로고 기준 파형 (8라운드 주기)</div>
+            <p class="text-xs text-zinc-400">특정 종목은 매 라운드 이 로고 파형의 등락 흐름과 완벽히 일치하게 움직입니다.</p>
+          </div>
+          <svg id="lobby-logo-wave" width="180" height="44" viewBox="0 0 180 44" class="shrink-0"></svg>
+        </div>
+
+        <!-- 플레이어 로그인 / 닉네임 설정 -->
+        <div class="rounded-xl bg-zinc-900/80 border border-zinc-800 p-4 space-y-3">
+          <label class="block text-xs font-bold text-zinc-300">플레이어 계정 및 닉네임</label>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input id="nickname-input" type="text" maxlength="12" placeholder="사용할 닉네임 입력 (예: 승부사)"
+              class="flex-1 px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-700 text-sm text-white focus:outline-none focus:border-amber-400" />
+            <button onclick="saveNickname()" class="px-4 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition">
+              닉네임 저장
+            </button>
+            <button id="google-login-btn" onclick="loginWithGoogle()" class="px-4 py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-extrabold transition flex items-center justify-center gap-1.5">
+              <span>G</span> Google 로그인
+            </button>
+          </div>
+          <p id="auth-helper-text" class="text-[11px] text-zinc-500">
+            닉네임만 입력해도 즉시 플레이 및 랭킹 등록이 가능합니다.
+          </p>
+        </div>
+
+        <!-- 모드 실행 버튼 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <button onclick="startSoloGame()" class="btn-gold py-3.5 px-5 rounded-xl text-sm shadow-lg">
+            ⚡ 솔로 매치 즉시 시작 (AI 7인)
+          </button>
+          <button onclick="createMultiplayerRoom()" class="py-3.5 px-5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-amber-500/40 text-amber-300 text-sm font-extrabold transition">
+            🔑 친구와 같이하기 (방 코드 생성)
+          </button>
+        </div>
+
+        <!-- 방 코드 입장 바 -->
+        <div class="flex gap-2 pt-1">
+          <input id="join-code-input" type="text" maxlength="6" placeholder="친구 방 코드 6자리 입력 (예: A7K9P2)"
+            class="flex-1 px-3.5 py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-sm uppercase font-mono-num text-amber-300 focus:outline-none focus:border-amber-400" />
+          <button onclick="joinMultiplayerRoom()" class="px-5 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-extrabold transition">
+            방 입장
+          </button>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 글로벌 실시간 랭킹 보드 -->
+      <div class="lg:col-span-5 rounded-2xl bg-[#121216] border border-zinc-800 p-6 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-black text-white flex items-center gap-2">
+                <span class="text-amber-400">🏆</span> 명예의 전당 TOP 15
+              </h3>
+              <p class="text-xs text-zinc-400">24라운드 최종 자산 기준 역대 최고 기록</p>
+            </div>
+            <button onclick="renderLeaderboard()" class="text-xs px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400">
+              새로고침
+            </button>
+          </div>
+
+          <div class="overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950/60">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-zinc-800 text-[11px] text-zinc-400 bg-zinc-900/60">
+                  <th class="py-2.5 px-3 w-12">순위</th>
+                  <th class="py-2.5 px-3">플레이어</th>
+                  <th class="py-2.5 px-3 text-right">최고 자산</th>
+                  <th class="py-2.5 px-3 text-right">판수</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-body" class="divide-y divide-zinc-800/60 text-xs">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500">
+          <span>생활동 기준: 1~4위 | 상금의 징표: 1,000만 원</span>
+          <span id="my-best-record" class="text-amber-400/90 font-mono-num">내 최고: -</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오늘의 7개 상장 종목 프리뷰 -->
+    <section class="rounded-2xl bg-[#121216] border border-zinc-800 p-6">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h3 class="text-base font-black text-white">상장 종목 7선 & 오늘의 규칙 풀</h3>
+          <p class="text-xs text-zinc-400">게임 시작 시 1차 힌트가 공개되며, 5·10·15·20라운드에 추가 규칙이 해금됩니다.</p>
+        </div>
+        <span class="text-xs px-3 py-1 rounded-full bg-zinc-900 text-zinc-300 border border-zinc-700">
+          초기가 10,000원 · 하한가 100원
+        </span>
+      </div>
+      <div id="lobby-stock-preview" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3"></div>
+    </section>
+  </main>
+
+  <!-- 2. 멀티플레이 대기실 화면 -->
+  <section id="screen-waiting" class="hidden max-w-3xl mx-auto px-4 py-10">
+    <div class="rounded-2xl bg-[#121216] gold-border gold-glow p-6 sm:p-8 space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+        <div>
+          <span class="text-xs font-bold text-amber-400">MULTIPLAYER LOBBY</span>
+          <h2 class="text-2xl font-black text-white mt-1">미스터리 거래소 대기실</h2>
+          <p class="text-xs text-zinc-400 mt-1">친구에게 아래 방 코드를 공유하세요. 시작 시 빈자리는 무작위 AI 플레이어가 채웁니다.</p>
+        </div>
+        <div class="flex items-center gap-2 bg-zinc-950 border border-amber-500/40 rounded-xl px-4 py-3">
+          <div>
+            <div class="text-[10px] text-zinc-400">ROOM CODE</div>
+            <div id="waiting-room-code" class="text-xl font-black font-mono-num tracking-widest text-amber-300">------</div>
+          </div>
+          <button onclick="copyRoomCode()" class="ml-2 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold">
+            복사
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold text-zinc-300">참가자 슬롯 (<span id="waiting-player-count">1</span>/8명)</span>
+          <span class="text-[11px] text-zinc-500">같은 브라우저 다른 탭에서도 방 코드로 즉시 테스트 가능</span>
+        </div>
+        <div id="waiting-slots" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-zinc-800">
+        <button onclick="leaveWaitingRoom()" class="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-bold text-zinc-400">
+          ← 로비로 나가기
+        </button>
+        <button id="host-start-btn" onclick="startMultiplayerMatch()" class="btn-gold px-6 py-3 rounded-xl text-sm">
+          게임 시작하기 (빈자리 AI 자동 배정)
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 메인 게임 플레이 화면 -->
+  <section id="screen-game" class="hidden max-w-7xl mx-auto px-4 py-5 space-y-5">
+    <!-- 상단 상태 바 -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div class="rounded-xl bg-[#121216] border border-zinc-800 p-3.5">
+        <div class="text-[11px] text-zinc-400">현재 라운드</div>
+        <div class="text-xl font-black font-mono-num text-white mt-0.5">
+          <span id="hud-round" class="text-amber-400">1</span> <span class="text-sm text-zinc-500">/ 24 R</span>
+        </div>
+      </div>
+      <div class="rounded-xl bg-[#121216] border border-zinc-800 p-3.5">
+        <div class="text-[11px] text-zinc-400">보유 현금</div>
+        <div id="hud-cash" class="text-xl font-black font-mono-num text-emerald-400 mt-0.5">100,000원</div>
+      </div>
+      <div class="rounded-xl bg-[#121216] border border-zinc-800 p-3.5">
+        <div class="text-[11px] text-zinc-400">추정 총자산 (현금+주식)</div>
+        <div id="hud-total-asset" class="text-xl font-black font-mono-num text-amber-300 mt-0.5">100,000원</div>
+      </div>
+      <div class="rounded-xl bg-[#121216] border border-zinc-800 p-3.5">
+        <div class="text-[11px] text-zinc-400">현재 순위 / 목표</div>
+        <div class="text-xl font-black font-mono-num text-white mt-0.5">
+          <span id="hud-rank">1위</span> <span class="text-xs font-normal text-zinc-400">/ 8명</span>
+        </div>
+      </div>
+      <div class="col-span-2 md:col-span-1 rounded-xl bg-[#121216] border border-amber-500/30 p-3.5 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-amber-300/80">보유 피스 (PIECE)</div>
+          <div id="hud-pieces" class="text-xl font-black font-mono-num text-amber-400 mt-0.5">2 개</div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <button id="btn-piece-hint" onclick="usePieceForHint()" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-[11px] font-bold text-amber-300 disabled:opacity-30">
+            힌트 해금 (-1)
+          </button>
+          <button id="btn-piece-cash" onclick="usePieceForCash()" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[11px] font-bold text-zinc-200 disabled:opacity-30">
+            +1만원 환전 (-1)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메인 2단 그리드 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <!-- 왼쪽 8컬럼: 7개 종목 거래소 보드 -->
+      <div class="lg:col-span-8 space-y-4">
+        <div class="rounded-2xl bg-[#121216] border border-zinc-800 p-4 sm:p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-base font-black text-white">실시간 거래소 호가 & 주문</h3>
+              <p class="text-xs text-zinc-400">매수·매도 수량을 지정한 뒤 우측 [라운드 거래 확정]을 누르면 주가가 정산됩니다.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="secret-status-badge" class="text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-amber-500/30 text-amber-300 font-bold">
+                시크릿 권한: 사용 가능 (1회)
+              </span>
+            </div>
+          </div>
+
+          <div id="stocks-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <!-- 7개 종목 카드 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 공개된 주가 변동 규칙 패널 -->
+        <div class="rounded-2xl bg-[#121216] border border-zinc-800 p-4 sm:p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-black text-amber-400">📜 해금된 주가 변동 규칙 (<span id="unlocked-count">2</span>/7)</h3>
+            <span class="text-[11px] text-zinc-400">5 · 10 · 15 · 20라운드에 순차 공개</span>
+          </div>
+          <div id="rules-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs"></div>
+        </div>
+      </div>
+
+      <!-- 오른쪽 4컬럼: 라운드 확정, 참가자 순위, 로그 -->
+      <div class="lg:col-span-4 space-y-4">
+        <!-- 라운드 주문 요약 & 확정 카드 -->
+        <div class="rounded-2xl bg-[#121216] gold-border p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-400">ROUND ACTION</span>
+            <span id="multi-sync-note" class="text-[11px] text-zinc-400">솔로 모드</span>
+          </div>
+
+          <div id="order-summary-box" class="rounded-xl bg-zinc-950 border border-zinc-800 p-3 text-xs space-y-1.5 max-h-36 overflow-y-auto">
+            <div class="text-zinc-500">이번 라운드 예약된 매매 주문이 없습니다.</div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <span class="text-zinc-400">정산 후 예상 잔여 현금</span>
+            <span id="projected-cash" class="font-mono-num font-bold text-white">100,000원</span>
+          </div>
+
+          <button id="btn-commit-round" onclick="commitPlayerRound()" class="w-full btn-gold py-3.5 rounded-xl text-sm shadow-lg">
+            라운드 거래 확정 및 정산 →
+          </button>
+          <button onclick="resetPendingOrders()" class="w-full py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-400">
+            예약 주문 초기화
+          </button>
+        </div>
+
+        <!-- 8인 실시간 순위 현황 -->
+        <div class="rounded-2xl bg-[#121216] border border-zinc-800 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-black text-white">플레이어 실시간 순위</h3>
+            <span class="text-[11px] text-zinc-400">1~4위 생활동</span>
+          </div>
+          <div id="players-ranking-list" class="space-y-2 text-xs"></div>
+        </div>
+
+        <!-- 거래소 시스템 로그 -->
+        <div class="rounded-2xl bg-[#121216] border border-zinc-800 p-4">
+          <h3 class="text-sm font-black text-white mb-2">거래소 중계 로그</h3>
+          <div id="game-log-box" class="h-44 overflow-y-auto space-y-1.5 text-[11px] font-mono-num text-zinc-300 bg-zinc-950 rounded-xl p-3 border border-zinc-800/80"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 최종 결과 모달 -->
+  <div id="result-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full rounded-2xl bg-[#121216] gold-border gold-glow p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+      <div class="text-center space-y-2">
+        <span class="text-xs font-bold tracking-widest text-amber-400">FINAL SETTLEMENT · 24 ROUNDS COMPLETE</span>
+        <h2 id="result-headline" class="text-2xl sm:text-3xl font-black text-white">최종 정산 결과</h2>
+        <p id="result-subtext" class="text-sm text-zinc-400"></p>
+      </div>
+
+      <div id="result-rewards-box" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+
+      <div class="rounded-xl border border-zinc-800 overflow-hidden">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-zinc-900 text-zinc-400">
+            <tr>
+              <th class="py-2.5 px-3">순위</th>
+              <th class="py-2.5 px-3">플레이어</th>
+              <th class="py-2.5 px-3">구역 판정</th>
+              <th class="py-2.5 px-3 text-right">최종 자산</th>
+            </tr>
+          </thead>
+          <tbody id="result-standings-body" class="divide-y divide-zinc-800 bg-zinc-950/70"></tbody>
+        </table>
+      </div>
+
+      <!-- 전체 7개 종목 실제 적용 규칙 정답 공개 -->
+      <div class="rounded-xl bg-zinc-950 border border-zinc-800 p-4 space-y-2">
+        <div class="text-xs font-bold text-amber-400">오늘 적용된 7개 종목 전체 규칙 공개</div>
+        <div id="result-all-rules" class="space-y-1.5 text-xs text-zinc-300"></div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button onclick="closeResultAndGoHome()" class="flex-1 btn-gold py-3 rounded-xl text-sm">
+          로비 & 랭킹 보드로 돌아가기
+        </button>
+        <button onclick="startSoloGame()" class="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-sm font-bold text-white">
+          새 게임 다시 시작
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Firebase 실시간 연동 설정 모달 -->
+  <div id="firebase-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="max-w-lg w-full rounded-2xl bg-[#121216] border border-zinc-700 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-black text-white">⚙ Firebase 실시간 서버 연동 설정</h3>
+        <button onclick="closeFirebaseModal()" class="text-zinc-400 hover:text-white text-sm">✕</button>
+      </div>
+      <p class="text-xs text-zinc-400 leading-relaxed">
+        서로 다른 스마트폰/PC에서 방 코드로 실시간 접속하고 글로벌 랭킹을 공유하려면 Firebase 프로젝트의
+        <span class="text-amber-300 font-mono-num">firebaseConfig</span> JSON을 붙여넣으세요.
+        (Realtime Database 및 Google Auth 활성화 필요)
+      </p>
+      <textarea id="firebase-config-textarea" rows="7" placeholder='{"apiKey": "...", "authDomain": "...", "databaseURL": "https://...", "projectId": "...", "appId": "..."}'
+        class="w-full p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono-num text-amber-200 focus:outline-none focus:border-amber-400"></textarea>
+      <div class="flex justify-end gap-2">
+        <button onclick="clearFirebaseConfig()" class="px-3.5 py-2 rounded-lg bg-zinc-900 text-xs text-zinc-400 hover:text-white">
+          설정 초기화
+        </button>
+        <button onclick="saveFirebaseConfig()" class="btn-gold px-4 py-2 rounded-lg text-xs">
+          저장 및 연결
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Compat SDK (선택적 라이브 연동용) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <script>
+    /*************************************************************************
+     * 1. 기본 상수 및 일일 시드(Daily Rotation) 엔진
+     *************************************************************************/
+    const STOCK_NAMES = [
+      '맛소금융', '무조건설', '방어제철', '알트엔터', '열림보안', '코요테크', '후자전자'
+    ];
+
+    // 공식 로고 파형 (8라운드 주기 등락 패턴: +1 상승, -1 하락)
+    const LOGO_WAVE_PATTERN = [1, -1, 1, 1, -1, -1, 1, -1];
+
+    // 무작위 한국인 AI 이름 풀 (방송인·실존 셀럽 제외 일반 성명)
+    const KOREAN_AI_NAMES = [
+      '김도윤', '이서연', '박지훈', '최하은', '정우진', '강민서', '조현우', '윤서아',
+      '장준혁', '임지민', '한승현', '오채원', '서민재', '신유진', '권태윤', '황수빈',
+      '안지호', '송다은', '전현준', '홍서윤', '유성민', '고예린', '문재현', '양소율'
+    ];
+
+    function getTodayDateString() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // 결정론적 시드 난수 생성기 (Mulberry32)
+    function createSeededRng(seedStr) {
+      let h = 1779033703 ^ seedStr.length;
+      for (let i = 0; i < seedStr.length; i++) {
+        h = Math.imul(h ^ seedStr.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      return function () {
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        return ((h ^= h >>> 16) >>> 0) / 4294967296;
+      };
+    }
+
+    /**
+     * 오늘의 날짜 시드 기반으로 7개 종목에 7가지 공식 규칙 아키타입을 매일 새롭게 매칭
+     */
+    function generateDailyRules(dateStr) {
+      const rng = createSeededRng('MYSTERY_EXCHANGE_' + dateStr);
+      const indices = [0, 1, 2, 3, 4, 5, 6];
+      // Fisher-Yates 셔플
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+
+      // 매일 조금씩 달라지는 파라미터
+      const upPctA = [18, 20, 22][Math.floor(rng() * 3)];
+      const downPctA = [8, 10, 12][Math.floor(rng() * 3)];
+      const followPct = [10, 12, 15][Math.floor(rng() * 3)];
+      const unitStep = [150, 200, 250][Math.floor(rng() * 3)];
+      const secretPct = [12, 13, 15][Math.floor(rng() * 3)];
+      const duelGain = [1200, 1400, 1500][Math.floor(rng() * 3)];
+      const duelLoss = [600, 700, 800][Math.floor(rng() * 3)];
+      const bandBonus = [1400, 1500, 1600][Math.floor(rng() * 3)];
+
+      // 각 아키타입이 배정된 종목 인덱스
+      const sMarket = indices[0];   // 규칙1: 전체 상승 종목 수 조건
+      const sFollow = indices[1];   // 규칙2: 특정 종목 상승 추종
+      const sHoldDelta = indices[2];// 규칙3: 특정 종목 보유 총량 증감 반비례
+      const sWave = indices[3];     // 규칙4: 미스터리 거래소 로고 파형 일치
+      const sSecret = indices[4];   // 규칙5: 특정 종목 시크릿 발동 여부
+      const sDuel = indices[5];     // 규칙6: 두 종목 매수량 비교
+      const sBand = indices[6];     // 규칙7: 특정 종목 보유 총량 구간(10~30주)
+
+      const rulesByStock = {};
+
+      rulesByStock[sMarket] = {
+        type: 'MARKET_COUNT',
+        text: `4개 이상의 주식이 상승할 경우 다음 라운드 +${upPctA}%, 4개 이하의 주식이 하락할 경우 다음 라운드 -${downPctA}%`,
+        calc: (ctx) => {
+          if (ctx.round === 1) return ctx.prevPrice;
+          if (ctx.prevUpCount >= 4) return Math.round(ctx.prevPrice * (1 + upPctA / 100));
+          if (ctx.prevDownCount <= 4) return Math.round(ctx.prevPrice * (1 - downPctA / 100));
+          return ctx.prevPrice;
+        }
+      };
+
+      rulesByStock[sFollow] = {
+        type: 'FOLLOW_TARGET',
+        targetIdx: sHoldDelta,
+        text: `${STOCK_NAMES[sHoldDelta]}의 가격이 올랐으면 +${followPct}%, 그렇지 않으면 -${followPct}%`,
+        calc: (ctx) => {
+          const targetPrevDelta = ctx.prevDeltas[sHoldDelta];
+          const isUp = targetPrevDelta > 0;
+          return Math.round(ctx.prevPrice * (1 + (isUp ? followPct : -followPct) / 100));
+        }
+      };
+
+      rulesByStock[sHoldDelta] = {
+        type: 'HOLDING_DELTA',
+        targetIdx: sHoldDelta,
+        text: `${STOCK_NAMES[sHoldDelta]}의 보유 총량이 증가한 만큼 1주당 -${unitStep}원, 감소한 만큼 1주당 +${unitStep}원`,
+        calc: (ctx) => {
+          const diff = ctx.currHoldings[sHoldDelta] - ctx.prevHoldings[sHoldDelta];
+          return ctx.prevPrice - diff * unitStep;
+        }
+      };
+
+      rulesByStock[sWave] = {
+        type: 'LOGO_WAVE',
+        text: `${STOCK_NAMES[sWave]}의 주가 변동 그래프는 미스터리 거래소 로고와 일치한다`,
+        calc: (ctx) => {
+          const dir = LOGO_WAVE_PATTERN[(ctx.round - 1) % LOGO_WAVE_PATTERN.length];
+          const stepRate = 0.14;
+          return Math.round(ctx.prevPrice * (1 + dir * stepRate));
+        }
+      };
+
+      rulesByStock[sSecret] = {
+        type: 'SECRET_TRIGGER',
+        targetIdx: sBand,
+        text: `${STOCK_NAMES[sBand]}에 시크릿이 걸려 있으면 +${secretPct}%, 그렇지 않으면 -1000원`,
+        calc: (ctx) => {
+          const isSecretActive = ctx.activeSecrets[sBand] > 0;
+          if (isSecretActive) return Math.round(ctx.prevPrice * (1 + secretPct / 100));
+          return ctx.prevPrice - 1000;
+        }
+      };
+
+      rulesByStock[sDuel] = {
+        type: 'BUY_DUEL',
+        targetIdx: sBand,
+        text: `${STOCK_NAMES[sDuel]}의 매수량이 ${STOCK_NAMES[sBand]}의 매수량보다 많을 경우 +${duelGain}원, 그렇지 않으면 -${duelLoss}원`,
+        calc: (ctx) => {
+          const myBuy = ctx.roundBuys[sDuel] || 0;
+          const oppBuy = ctx.roundBuys[sBand] || 0;
+          return ctx.prevPrice + (myBuy > oppBuy ? duelGain : -duelLoss);
+        }
+      };
+
+      rulesByStock[sBand] = {
+        type: 'HOLDING_BAND',
+        targetIdx: sBand,
+        text: `${STOCK_NAMES[sBand]}의 보유 총량이 10주 이상 30주 이하이면 +${bandBonus}원, 그렇지 않으면 -${bandBonus}원`,
+        calc: (ctx) => {
+          const totalH = ctx.currHoldings[sBand];
+          const inBand = totalH >= 10 && totalH <= 30;
+          return ctx.prevPrice + (inBand ? bandBonus : -bandBonus);
+        }
+      };
+
+      return rulesByStock;
+    }
+
+    /*************************************************************************
+     * 2. Firebase & 실시간 동기화 레이어 (BroadcastChannel + LocalStorage 폴백)
+     *************************************************************************/
+    let firebaseApp = null;
+    let firebaseDb = null;
+    let firebaseAuth = null;
+    let isFirebaseLive = false;
+
+    const channel = new BroadcastChannel('mystery_exchange_sync_v1');
+
+    function initFirebaseFromStorage() {
+      const saved = localStorage.getItem('me_firebase_config');
+      const badge = document.getElementById('sync-status-badge');
+      if (!saved) {
+        isFirebaseLive = false;
+        badge.textContent = '● 로컬 실시간 동기화';
+        badge.className = 'text-[11px] px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-emerald-400 font-medium';
+        return;
+      }
+      try {
+        const cfg = JSON.parse(saved);
+        if (!firebase.apps.length) {
+          firebaseApp = firebase.initializeApp(cfg);
+        } else {
+          firebaseApp = firebase.app();
+        }
+        firebaseDb = firebase.database();
+        firebaseAuth = firebase.auth();
+        isFirebaseLive = true;
+        badge.textContent = '● Firebase 라이브 서버 연결됨';
+        badge.className = 'text-[11px] px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold';
+      } catch (e) {
+        console.error('Firebase 초기화 실패:', e);
+        isFirebaseLive = false;
+      }
+    }
+
+    function openFirebaseModal() {
+      document.getElementById('firebase-config-textarea').value = localStorage.getItem('me_firebase_config') || '';
+      document.getElementById('firebase-modal').classList.remove('hidden');
+    }
+    function closeFirebaseModal() {
+      document.getElementById('firebase-modal').classList.add('hidden');
+    }
+    function saveFirebaseConfig() {
+      const raw = document.getElementById('firebase-config-textarea').value.trim();
+      if (!raw) return;
+      try {
+        JSON.parse(raw);
+        localStorage.setItem('me_firebase_config', raw);
+        initFirebaseFromStorage();
+        closeFirebaseModal();
+        renderLeaderboard();
+        alert('Firebase 설정이 저장되었습니다.');
+      } catch (e) {
+        alert('올바른 JSON 형식의 Firebase Config를 입력해주세요.');
+      }
+    }
+    function clearFirebaseConfig() {
+      localStorage.removeItem('me_firebase_config');
+      location.reload();
+    }
+
+    /*************************************************************************
+     * 3. 사용자 프로필 및 글로벌 랭킹 관리
+     *************************************************************************/
+    let currentUser = {
+      uid: localStorage.getItem('me_uid') || ('user_' + Math.random().toString(36).slice(2, 10)),
+      name: localStorage.getItem('me_nickname') || '플레이어_' + Math.floor(100 + Math.random() * 900),
+      isGoogle: false
+    };
+    localStorage.setItem('me_uid', currentUser.uid);
+
+    function updateUserUI() {
+      document.getElementById('user-pill').textContent = currentUser.name;
+      document.getElementById('nickname-input').value = currentUser.name;
+    }
+
+    function saveNickname() {
+      const val = document.getElementById('nickname-input').value.trim();
+      if (!val) return alert('닉네임을 입력해주세요.');
+      currentUser.name = val;
+      localStorage.setItem('me_nickname', val);
+      updateUserUI();
+      renderLeaderboard();
+    }
+
+    async function loginWithGoogle() {
+      if (!isFirebaseLive || !firebaseAuth) {
+        alert('Google OAuth 로그인을 사용하려면 우측 상단 [⚙ Firebase 설정]에서 Firebase 프로젝트를 먼저 연결해주세요. (닉네임만으로도 모든 게임과 랭킹 이용이 가능합니다!)');
+        return;
+      }
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const res = await firebaseAuth.signInWithPopup(provider);
+        if (res.user) {
+          currentUser.uid = res.user.uid;
+          currentUser.name = res.user.displayName || 'Google플레이어';
+          currentUser.isGoogle = true;
+          localStorage.setItem('me_uid', currentUser.uid);
+          localStorage.setItem('me_nickname', currentUser.name);
+          updateUserUI();
+          document.getElementById('auth-helper-text').textContent = `Google 계정(${res.user.email})으로 로그인되었습니다.`;
+          renderLeaderboard();
+        }
+      } catch (err) {
+        alert('Google 로그인 중 오류가 발생했습니다: ' + err.message);
+      }
+    }
+
+    const DEFAULT_SEED_RANKINGS = [
+      { uid: 'seed_1', name: '김도윤', bestAsset: 4820000, games: 14 },
+      { uid: 'seed_2', name: '이서연', bestAsset: 3490000, games: 9 },
+      { uid: 'seed_3', name: '박지훈', bestAsset: 2150000, games: 11 },
+      { uid: 'seed_4', name: '최하은', bestAsset: 1680000, games: 7 },
+      { uid: 'seed_5', name: '정우진', bestAsset: 940000, games: 5 }
+    ];
+
+    async function getLeaderboardData() {
+      if (isFirebaseLive && firebaseDb) {
+        try {
+          const snap = await firebaseDb.ref('mystery_leaderboard').once('value');
+          const val = snap.val();
+          if (val) return Object.values(val);
+        } catch (e) {
+          console.warn('Firebase 랭킹 로드 실패, 로컬 데이터 사용', e);
+        }
+      }
+      const raw = localStorage.getItem('me_leaderboard_v1');
+      if (!raw) {
+        localStorage.setItem('me_leaderboard_v1', JSON.stringify(DEFAULT_SEED_RANKINGS));
+        return [...DEFAULT_SEED_RANKINGS];
+      }
+      return JSON.parse(raw);
+    }
+
+    async function recordScoreToLeaderboard(finalAsset) {
+      const list = await getLeaderboardData();
+      const idx = list.findIndex(item => item.uid === currentUser.uid);
+      if (idx >= 0) {
+        list[idx].name = currentUser.name;
+        list[idx].games = (list[idx].games || 0) + 1;
+        if (finalAsset > list[idx].bestAsset) {
+          list[idx].bestAsset = finalAsset;
+        }
+      } else {
+        list.push({
+          uid: currentUser.uid,
+          name: currentUser.name,
+          bestAsset: finalAsset,
+          games: 1
+        });
+      }
+      localStorage.setItem('me_leaderboard_v1', JSON.stringify(list));
+
+      if (isFirebaseLive && firebaseDb) {
+        const entry = list.find(item => item.uid === currentUser.uid);
+        await firebaseDb.ref('mystery_leaderboard/' + currentUser.uid).set(entry);
+      }
+      channel.postMessage({ type: 'LEADERBOARD_UPDATED' });
+      renderLeaderboard();
+    }
+
+    async function renderLeaderboard() {
+      const list = await getLeaderboardData();
+      list.sort((a, b) => b.bestAsset - a.bestAsset);
+      const top15 = list.slice(0, 15);
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = top15.map((row, i) => {
+        const isMe = row.uid === currentUser.uid;
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+        return `
+          <tr class="${isMe ? 'bg-amber-500/15 text-amber-200 font-bold' : 'text-zinc-300'}">
+            <td class="py-2 px-3 font-mono-num">${medal}</td>
+            <td class="py-2 px-3">${escapeHtml(row.name)} ${isMe ? '<span class="text-[10px] text-amber-400">(나)</span>' : ''}</td>
+            <td class="py-2 px-3 text-right font-mono-num text-amber-300">${row.bestAsset.toLocaleString()}원</td>
+            <td class="py-2 px-3 text-right font-mono-num text-zinc-400">${row.games || 1}회</td>
+          </tr>
+        `;
+      }).join('');
+
+      const me = list.find(r => r.uid === currentUser.uid);
+      document.getElementById('my-best-record').textContent =
+        me ? `내 최고: ${me.bestAsset.toLocaleString()}원 (${me.games}판)` : '내 최고: 기록 없음';
+    }
+
+    /*************************************************************************
+     * 4. 멀티플레이 방 생성 & 대기실 동기화
+     *************************************************************************/
+    let activeRoom = null;
+    let isHost = false;
+
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      return code;
+    }
+
+    function saveRoomState(room) {
+      activeRoom = room;
+      localStorage.setItem('me_room_' + room.code, JSON.stringify(room));
+      if (isFirebaseLive && firebaseDb) {
+        firebaseDb.ref('mystery_rooms/' + room.code).set(room);
+      }
+      channel.postMessage({ type: 'ROOM_SYNC', room });
+    }
+
+    async function loadRoomState(code) {
+      if (isFirebaseLive && firebaseDb) {
+        const snap = await firebaseDb.ref('mystery_rooms/' + code).once('value');
+        if (snap.val()) return snap.val();
+      }
+      const raw = localStorage.getItem('me_room_' + code);
+      return raw ? JSON.parse(raw) : null;
+    }
+
+    function createMultiplayerRoom() {
+      const code = generateRoomCode();
+      isHost = true;
+      const room = {
+        code,
+        hostUid: currentUser.uid,
+        status: 'waiting',
+        dateSeed: getTodayDateString(),
+        players: [
+          { uid: currentUser.uid, name: currentUser.name, isAI: false }
+        ],
+        gameState: null
+      };
+      saveRoomState(room);
+      showWaitingScreen(room);
+    }
+
+    async function joinMultiplayerRoom() {
+      const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+      if (code.length < 4) return alert('방 코드를 정확히 입력해주세요.');
+      const room = await loadRoomState(code);
+      if (!room) return alert('존재하지 않는 방 코드입니다. 코드를 다시 확인해주세요.');
+      if (room.status !== 'waiting') return alert('이미 게임이 시작된 방입니다.');
+      if (room.players.length >= 8) return alert('방 인원(8명)이 가득 찼습니다.');
+
+      isHost = room.hostUid === currentUser.uid;
+      if (!room.players.some(p => p.uid === currentUser.uid)) {
+        room.players.push({ uid: currentUser.uid, name: currentUser.name, isAI: false });
+        saveRoomState(room);
+      }
+      showWaitingScreen(room);
+    }
+
+    function showWaitingScreen(room) {
+      document.getElementById('screen-lobby').classList.add('hidden');
+      document.getElementById('screen-game').classList.add('hidden');
+      document.getElementById('screen-waiting').classList.remove('hidden');
+      renderWaitingRoom(room);
+    }
+
+    function renderWaitingRoom(room) {
+      document.getElementById('waiting-room-code').textContent = room.code;
+      document.getElementById('waiting-player-count').textContent = room.players.length;
+      const startBtn = document.getElementById('host-start-btn');
+      if (room.hostUid === currentUser.uid) {
+        startBtn.disabled = false;
+        startBtn.textContent = '게임 시작하기 (빈자리 AI 자동 배정)';
+      } else {
+        startBtn.disabled = true;
+        startBtn.textContent = '방장이 게임을 시작할 때까지 대기 중...';
+      }
+
+      const slotsEl = document.getElementById('waiting-slots');
+      let html = '';
+      for (let i = 0; i < 8; i++) {
+        const p = room.players[i];
+        if (p) {
+          html += `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-950 border border-amber-500/30">
+              <div class="flex items-center gap-2.5">
+                <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold flex items-center justify-center">${i + 1}</span>
+                <span class="text-sm font-bold text-white">${escapeHtml(p.name)}</span>
+              </div>
+              <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-bold">
+                ${p.uid === room.hostUid ? '방장' : '참가자'}
+              </span>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-950/40 border border-dashed border-zinc-800 text-zinc-500">
+              <div class="flex items-center gap-2.5">
+                <span class="w-6 h-6 rounded-full bg-zinc-900 text-zinc-500 text-xs flex items-center justify-center">${i + 1}</span>
+                <span class="text-xs">빈 슬롯 (시작 시 무작위 한국인 AI 배정)</span>
+              </div>
+              <span class="text-[11px]">AI 대기</span>
+            </div>
+          `;
+        }
+      }
+      slotsEl.innerHTML = html;
+    }
+
+    function copyRoomCode() {
+      if (!activeRoom) return;
+      navigator.clipboard?.writeText(activeRoom.code);
+      alert(`방 코드 [${activeRoom.code}]가 복사되었습니다!`);
+    }
+
+    function leaveWaitingRoom() {
+      activeRoom = null;
+      goHome();
+    }
+
+    // 실시간 탭 간 동기화 수신
+    channel.onmessage = (ev) => {
+      const msg = ev.data;
+      if (msg.type === 'LEADERBOARD_UPDATED') renderLeaderboard();
+      if (msg.type === 'ROOM_SYNC' && activeRoom && msg.room.code === activeRoom.code) {
+        activeRoom = msg.room;
+        if (activeRoom.status === 'waiting') {
+          renderWaitingRoom(activeRoom);
+        } else if (activeRoom.status === 'playing' && activeRoom.gameState) {
+          gameState = activeRoom.gameState;
+          document.getElementById('screen-waiting').classList.add('hidden');
+          document.getElementById('screen-game').classList.remove('hidden');
+          renderGameScreen();
+        }
+      }
+    };
+
+    /*************************************************************************
+     * 5. 핵심 게임 엔진 (7개 종목, 시크릿, 피스, AI 의사결정, 24라운드 정산)
+     *************************************************************************/
+    let gameState = null;
+    let pendingOrders = [0, 0, 0, 0, 0, 0, 0]; // 양수: 매수, 음수: 매도
+    let pendingSecretStock = null; // 이번 라운드에 시크릿을 걸 종목 인덱스
+
+    function pickRandomKoreanAINames(count, excludeNames) {
+      const pool = KOREAN_AI_NAMES.filter(n => !excludeNames.includes(n));
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, count);
+    }
+
+    function buildInitialGameState(humanPlayers, roomCode = null) {
+      const dateStr = getTodayDateString();
+      const aiNeeded = 8 - humanPlayers.length;
+      const aiNames = pickRandomKoreanAINames(aiNeeded, humanPlayers.map(p => p.name));
+
+      const players = [
+        ...humanPlayers.map(p => ({
+          uid: p.uid,
+          name: p.name,
+          isAI: false,
+          cash: 100000,
+          pieces: 2,
+          holdings: [0, 0, 0, 0, 0, 0, 0],
+          secretUsed: false,
+          committed: false,
+          pendingOrders: [0, 0, 0, 0, 0, 0, 0],
+          pendingSecret: null
+        })),
+        ...aiNames.map((name, idx) => ({
+          uid: 'ai_' + idx,
+          name,
+          isAI: true,
+          style: ['trend', 'contrarian', 'balanced', 'aggressive'][idx % 4],
+          cash: 100000,
+          pieces: 2,
+          holdings: [0, 0, 0, 0, 0, 0, 0],
+          secretUsed: false,
+          committed: true,
+          pendingOrders: [0, 0, 0, 0, 0, 0, 0],
+          pendingSecret: null
+        }))
+      ];
+
+      // 초기 공개 규칙 순서 (시작 시 2개, 이후 5/10/15/20라운드마다 추가 해금)
+      const revealOrder = [0, 1, 2, 3, 4, 5, 6].sort(() => Math.random() - 0.5);
+
+      return {
+        roomCode,
+        dateSeed: dateStr,
+        round: 1,
+        maxRounds: 24,
+        prices: [10000, 10000, 10000, 10000, 10000, 10000, 10000],
+        priceHistory: STOCK_NAMES.map(() => [10000]),
+        prevDeltas: [0, 0, 0, 0, 0, 0, 0],
+        prevUpCount: 0,
+        prevDownCount: 0,
+        prevTotalHoldings: [0, 0, 0, 0, 0, 0, 0],
+        currTotalHoldings: [0, 0, 0, 0, 0, 0, 0],
+        lastRoundBuys: [0, 0, 0, 0, 0, 0, 0],
+        lastRoundSells: [0, 0, 0, 0, 0, 0, 0],
+        activeSecrets: [0, 0, 0, 0, 0, 0, 0], // 남은 블라인드 라운드 수 (최대 2)
+        revealOrder,
+        unlockedCount: 2,
+        players,
+        logs: [`[${dateStr}] 미스터리 거래소 개장! 7개 종목 기준가 10,000원으로 시작합니다.`]
+      };
+    }
+
+    function startSoloGame() {
+      document.getElementById('result-modal').classList.add('hidden');
+      activeRoom = null;
+      isHost = true;
+      gameState = buildInitialGameState([{ uid: currentUser.uid, name: currentUser.name }]);
+      pendingOrders = [0, 0, 0, 0, 0, 0, 0];
+      pendingSecretStock = null;
+
+      document.getElementById('screen-lobby').classList.add('hidden');
+      document.getElementById('screen-waiting').classList.add('hidden');
+      document.getElementById('screen-game').classList.remove('hidden');
+      renderGameScreen();
+    }
+
+    function startMultiplayerMatch() {
+      if (!activeRoom) return;
+      gameState = buildInitialGameState(activeRoom.players, activeRoom.code);
+      activeRoom.status = 'playing';
+      activeRoom.gameState = gameState;
+      saveRoomState(activeRoom);
+
+      pendingOrders = [0, 0, 0, 0, 0, 0, 0];
+      pendingSecretStock = null;
+      document.getElementById('screen-waiting').classList.add('hidden');
+      document.getElementById('screen-game').classList.remove('hidden');
+      renderGameScreen();
+    }
+
+    function getMe() {
+      return gameState.players.find(p => p.uid === currentUser.uid) || gameState.players[0];
+    }
+
+    function calcPlayerAsset(player, prices) {
+      let stockVal = 0;
+      for (let i = 0; i < 7; i++) {
+        stockVal += player.holdings[i] * prices[i];
+      }
+      return player.cash + stockVal;
+    }
+
+    function adjustOrder(stockIdx, delta) {
+      const me = getMe();
+      if (!me || me.committed && gameState.roomCode) return;
+
+      const currentOrder = pendingOrders[stockIdx];
+      const nextOrder = currentOrder + delta;
+
+      // 보유 수량보다 많이 매도 불가
+      if (me.holdings[stockIdx] + nextOrder < 0) return;
+
+      // 현금 한도 체크
+      let totalCashImpact = 0;
+      for (let i = 0; i < 7; i++) {
+        const ord = i === stockIdx ? nextOrder : pendingOrders[i];
+        totalCashImpact += ord * gameState.prices[i];
+      }
+      if (me.cash - totalCashImpact < 0) return;
+
+      pendingOrders[stockIdx] = nextOrder;
+      renderGameScreen();
+    }
+
+    function resetPendingOrders() {
+      pendingOrders = [0, 0, 0, 0, 0, 0, 0];
+      pendingSecretStock = null;
+      renderGameScreen();
+    }
+
+    function toggleSecretOnStock(stockIdx) {
+      const me = getMe();
+      if (me.secretUsed) return;
+      pendingSecretStock = pendingSecretStock === stockIdx ? null : stockIdx;
+      renderGameScreen();
+    }
+
+    function usePieceForHint() {
+      const me = getMe();
+      if (gameState.round > 20) return alert('피스는 20라운드 종료 전까지만 사용할 수 있습니다.');
+      if (me.pieces < 1) return alert('보유한 피스가 부족합니다.');
+      if (gameState.unlockedCount >= 7) return alert('이미 모든 종목의 규칙이 공개되었습니다.');
+
+      me.pieces -= 1;
+      gameState.unlockedCount += 1;
+      const newlyUnlockedStock = STOCK_NAMES[gameState.revealOrder[gameState.unlockedCount - 1]];
+      gameState.logs.unshift(`[피스 사용] ${me.name}님이 피스 1개를 소모해 [${newlyUnlockedStock}]의 변동 규칙을 조기 해금했습니다.`);
+      if (activeRoom) { activeRoom.gameState = gameState; saveRoomState(activeRoom); }
+      renderGameScreen();
+    }
+
+    function usePieceForCash() {
+      const me = getMe();
+      if (gameState.round > 20) return alert('피스는 20라운드 종료 전까지만 사용할 수 있습니다.');
+      if (me.pieces < 1) return alert('보유한 피스가 부족합니다.');
+
+      me.pieces -= 1;
+      me.cash += 10000;
+      gameState.logs.unshift(`[피스 환전] ${me.name}님이 피스 1개를 가상 현금 10,000원으로 교환했습니다.`);
+      if (activeRoom) { activeRoom.gameState = gameState; saveRoomState(activeRoom); }
+      renderGameScreen();
+    }
+
+    // AI 플레이어 라운드 의사결정
+    function generateAIOrders(ai) {
+      const orders = [0, 0, 0, 0, 0, 0, 0];
+      let simCash = ai.cash;
+
+      // 기존 보유 종목 일부 익절/손절
+      for (let i = 0; i < 7; i++) {
+        if (ai.holdings[i] > 0 && Math.random() < 0.35) {
+          const sellQty = Math.max(1, Math.floor(ai.holdings[i] * 0.5));
+          orders[i] -= sellQty;
+          simCash += sellQty * gameState.prices[i];
+        }
+      }
+
+      // 1~2개 종목 매수
+      const picks = [0, 1, 2, 3, 4, 5, 6].sort(() => Math.random() - 0.5).slice(0, 2);
+      for (const idx of picks) {
+        const price = gameState.prices[idx];
+        if (price <= 0 || simCash < price) continue;
+        const maxBuy = Math.floor((simCash * 0.45) / price);
+        if (maxBuy >= 1) {
+          const buyQty = Math.max(1, Math.min(maxBuy, Math.ceil(Math.random() * 4)));
+          orders[idx] += buyQty;
+          simCash -= buyQty * price;
+        }
+      }
+
+      // 가끔 시크릿 발동 (중반 라운드)
+      let secretPick = null;
+      if (!ai.secretUsed && gameState.round >= 6 && gameState.round <= 19 && Math.random() < 0.14) {
+        secretPick = Math.floor(Math.random() * 7);
+      }
+
+      return { orders, secretPick };
+    }
+
+    function commitPlayerRound() {
+      const me = getMe();
+      me.pendingOrders = [...pendingOrders];
+      me.pendingSecret = pendingSecretStock;
+      me.committed = true;
+
+      if (gameState.roomCode && activeRoom) {
+        // 멀티플레이 방에서는 모든 인간 참가자가 확정했는지 확인
+        const allHumansReady = gameState.players.filter(p => !p.isAI).every(p => p.committed);
+        if (!allHumansReady) {
+          activeRoom.gameState = gameState;
+          saveRoomState(activeRoom);
+          renderGameScreen();
+          return;
+        }
+      }
+
+      resolveRound();
+    }
+
+    function resolveRound() {
+      const dailyRules = generateDailyRules(gameState.dateSeed);
+      const roundBuys = [0, 0, 0, 0, 0, 0, 0];
+      const roundSells = [0, 0, 0, 0, 0, 0, 0];
+      const newlyTriggeredSecrets = [];
+
+      // 1. 모든 플레이어(인간 + AI) 주문 집계 및 잔고 반영
+      for (const p of gameState.players) {
+        let orders = p.pendingOrders;
+        let sec = p.pendingSecret;
+
+        if (p.isAI) {
+          const aiDec = generateAIOrders(p);
+          orders = aiDec.orders;
+          sec = aiDec.secretPick;
+        }
+
+        for (let i = 0; i < 7; i++) {
+          const q = orders[i] || 0;
+          if (q > 0) {
+            const cost = q * gameState.prices[i];
+            if (p.cash >= cost) {
+              p.cash -= cost;
+              p.holdings[i] += q;
+              roundBuys[i] += q;
+            }
+          } else if (q < 0) {
+            const sellQty = Math.min(p.holdings[i], Math.abs(q));
+            p.holdings[i] -= sellQty;
+            p.cash += sellQty * gameState.prices[i];
+            roundSells[i] += sellQty;
+          }
+        }
+
+        if (sec !== null && !p.secretUsed) {
+          p.secretUsed = true;
+          newlyTriggeredSecrets.push({ player: p.name, stockIdx: sec });
+        }
+
+        p.committed = false;
+        p.pendingOrders = [0, 0, 0, 0, 0, 0, 0];
+        p.pendingSecret = null;
+      }
+
+      // 2. 기존 시크릿 카운트 감소 후 신규 시크릿 적용 (다음 라운드부터 2라운드 유지)
+      for (let i = 0; i < 7; i++) {
+        if (gameState.activeSecrets[i] > 0) gameState.activeSecrets[i] -= 1;
+      }
+      for (const item of newlyTriggeredSecrets) {
+        gameState.activeSecrets[item.stockIdx] = 2;
+        gameState.logs.unshift(`🔒 [시크릿 발동] 누군가 [${STOCK_NAMES[item.stockIdx]}] 종목에 시크릿을 걸었습니다! (2라운드간 정보 비공개)`);
+      }
+
+      // 3. 보유 총량 집계
+      const newTotalHoldings = [0, 0, 0, 0, 0, 0, 0];
+      for (const p of gameState.players) {
+        for (let i = 0; i < 7; i++) newTotalHoldings[i] += p.holdings[i];
+      }
+
+      // 4. 오늘의 규칙 엔진으로 다음 주가 계산 (최저가 100원 하한 적용)
+      const nextPrices = [];
+      const nextDeltas = [];
+      let upCount = 0;
+      let downCount = 0;
+
+      const ctx = {
+        round: gameState.round,
+        prevUpCount: gameState.prevUpCount,
+        prevDownCount: gameState.prevDownCount,
+        prevDeltas: gameState.prevDeltas,
+        prevHoldings: gameState.currTotalHoldings,
+        currHoldings: newTotalHoldings,
+        roundBuys,
+        roundSells,
+        activeSecrets: gameState.activeSecrets
+      };
+
+      for (let i = 0; i < 7; i++) {
+        const rawNext = dailyRules[i].calc({ ...ctx, prevPrice: gameState.prices[i] });
+        const clamped = Math.max(100, Math.round(rawNext / 10) * 10);
+        const delta = clamped - gameState.prices[i];
+        nextPrices.push(clamped);
+        nextDeltas.push(delta);
+        if (delta > 0) upCount++;
+        if (delta < 0) downCount++;
+        gameState.priceHistory[i].push(clamped);
+      }
+
+      gameState.logs.unshift(
+        `[R${gameState.round} 정산] 상승 ${upCount}종목 · 하락 ${downCount}종목 (총 매수 ${roundBuys.reduce((a, b) => a + b, 0)}주 / 매도 ${roundSells.reduce((a, b) => a + b, 0)}주)`
+      );
+
+      gameState.prices = nextPrices;
+      gameState.prevDeltas = nextDeltas;
+      gameState.prevUpCount = upCount;
+      gameState.prevDownCount = downCount;
+      gameState.prevTotalHoldings = [...gameState.currTotalHoldings];
+      gameState.currTotalHoldings = newTotalHoldings;
+      gameState.lastRoundBuys = roundBuys;
+      gameState.lastRoundSells = roundSells;
+
+      pendingOrders = [0, 0, 0, 0, 0, 0, 0];
+      pendingSecretStock = null;
+
+      // 5. 라운드 진행 또는 종료 판정
+      if (gameState.round >= gameState.maxRounds) {
+        finishGame();
+        return;
+      }
+
+      gameState.round += 1;
+
+      // 5, 10, 15, 20라운드 자동 힌트 해금
+      if ([5, 10, 15, 20].includes(gameState.round) && gameState.unlockedCount < 7) {
+        gameState.unlockedCount += 1;
+        const unlockedName = STOCK_NAMES[gameState.revealOrder[gameState.unlockedCount - 1]];
+        gameState.logs.unshift(`📢 [${gameState.round}라운드 정기 공개] [${unlockedName}]의 주가 변동 규칙이 공개되었습니다!`);
+      }
+
+      if (activeRoom) {
+        activeRoom.gameState = gameState;
+        saveRoomState(activeRoom);
+      }
+
+      renderGameScreen();
+    }
+
+    async function finishGame() {
+      const dailyRules = generateDailyRules(gameState.dateSeed);
+      const standings = gameState.players
+        .map(p => ({ ...p, finalAsset: calcPlayerAsset(p, gameState.prices) }))
+        .sort((a, b) => b.finalAsset - a.finalAsset);
+
+      const meIndex = standings.findIndex(p => p.uid === currentUser.uid);
+      const myRank = meIndex + 1;
+      const myFinal = standings[meIndex].finalAsset;
+
+      // 랭킹 보드에 기록 저장
+      await recordScoreToLeaderboard(myFinal);
+
+      // 보상 계산
+      let bonusPieces = 0;
+      if (myFinal >= 6000000) bonusPieces = 3;
+      else if (myFinal >= 3000000) bonusPieces = 2;
+      else if (myFinal >= 1500000) bonusPieces = 1;
+
+      const hasPrizeToken = myFinal >= 10000000;
+      const hasAllianceToken = myRank === 1;
+      const zoneText = myRank <= 4 ? '생활동 진출 (생존)' : myRank <= 7 ? '감옥동 행' : '최하위 · 유배지 이동';
+
+      document.getElementById('result-headline').textContent = `최종 ${myRank}위 · ${myFinal.toLocaleString()}원`;
+      document.getElementById('result-subtext').textContent = `판정 결과: ${zoneText}`;
+
+      document.getElementById('result-rewards-box').innerHTML = `
+        <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800">
+          <div class="text-[11px] text-zinc-400">구역 판정</div>
+          <div class="text-sm font-black ${myRank <= 4 ? 'text-emerald-400' : myRank === 8 ? 'text-rose-400' : 'text-amber-300'} mt-1">
+            ${zoneText}
+          </div>
+        </div>
+        <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800">
+          <div class="text-[11px] text-zinc-400">획득 보상</div>
+          <div class="text-sm font-black text-amber-300 mt-1">
+            피스 +${bonusPieces}개 ${hasAllianceToken ? '· 연맹의 징표' : ''} ${hasPrizeToken ? '· 상금의 징표' : ''}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('result-standings-body').innerHTML = standings.map((p, idx) => {
+        const r = idx + 1;
+        const zone = r <= 4 ? '<span class="text-emerald-400">생활동</span>' : r <= 7 ? '<span class="text-zinc-400">감옥동</span>' : '<span class="text-rose-400">유배지</span>';
+        return `
+          <tr class="${p.uid === currentUser.uid ? 'bg-amber-500/15 font-bold text-amber-200' : 'text-zinc-300'}">
+            <td class="py-2.5 px-3 font-mono-num">${r}위</td>
+            <td class="py-2.5 px-3">${escapeHtml(p.name)}</td>
+            <td class="py-2.5 px-3">${zone}</td>
+            <td class="py-2.5 px-3 text-right font-mono-num">${p.finalAsset.toLocaleString()}원</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('result-all-rules').innerHTML = STOCK_NAMES.map((name, i) => `
+        <div class="p-2 rounded bg-zinc-900/90 border border-zinc-800">
+          <span class="font-bold text-amber-300">${name}:</span> ${dailyRules[i].text}
+        </div>
+      `).join('');
+
+      document.getElementById('result-modal').classList.remove('hidden');
+    }
+
+    /*************************************************************************
+     * 6. UI 렌더링 함수
+     *************************************************************************/
+    function renderLogoWaves() {
+      const draw = (svgId, w, h) => {
+        const svg = document.getElementById(svgId);
+        if (!svg) return;
+        let y = h * 0.55;
+        const pts = [[4, y]];
+        const stepX = (w - 8) / LOGO_WAVE_PATTERN.length;
+        LOGO_WAVE_PATTERN.forEach((dir, idx) => {
+          y -= dir * (h * 0.22);
+          y = Math.max(5, Math.min(h - 5, y));
+          pts.push([4 + (idx + 1) * stepX, y]);
+        });
+        const poly = pts.map(p => p.join(',')).join(' ');
+        svg.innerHTML = `
+          <polyline fill="none" stroke="#d4af37" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${poly}" />
+          ${pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2.2" fill="#f3d266" />`).join('')}
+        `;
+      };
+      draw('header-logo-wave', 140, 28);
+      draw('lobby-logo-wave', 180, 44);
+    }
+
+    function renderLobbyStockPreview() {
+      const el = document.getElementById('lobby-stock-preview');
+      el.innerHTML = STOCK_NAMES.map((name, i) => `
+        <div class="rounded-xl bg-zinc-950 border border-zinc-800 p-3 flex flex-col justify-between">
+          <div class="text-[11px] text-zinc-500 font-mono-num">STOCK 0${i + 1}</div>
+          <div class="text-sm font-black text-white mt-1">${name}</div>
+          <div class="text-xs font-mono-num text-amber-400 mt-2">10,000원</div>
+        </div>
+      `).join('');
+    }
+
+    function buildSparkline(history) {
+      if (!history || history.length < 2) return '';
+      const w = 96, h = 28;
+      const min = Math.min(...history);
+      const max = Math.max(...history);
+      const span = max - min || 1;
+      const pts = history.slice(-10).map((val, idx, arr) => {
+        const x = (idx / (arr.length - 1)) * (w - 4) + 2;
+        const y = h - 3 - ((val - min) / span) * (h - 6);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      const lastDelta = history[history.length - 1] - history[history.length - 2];
+      const color = lastDelta > 0 ? '#f87171' : lastDelta < 0 ? '#60a5fa' : '#a1a1aa';
+      return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${color}" stroke-width="2" points="${pts}" /></svg>`;
+    }
+
+    function renderGameScreen() {
+      if (!gameState) return;
+      const me = getMe();
+      const anySecretActive = gameState.activeSecrets.some(s => s > 0);
+      const dailyRules = generateDailyRules(gameState.dateSeed);
+
+      // 상단 HUD
+      document.getElementById('hud-round').textContent = gameState.round;
+      document.getElementById('hud-cash').textContent = `${me.cash.toLocaleString()}원`;
+
+      const myAsset = calcPlayerAsset(me, gameState.prices);
+      document.getElementById('hud-total-asset').textContent = anySecretActive
+        ? '비공개 (시크릿 발동 중)'
+        : `${myAsset.toLocaleString()}원`;
+
+      const sorted = [...gameState.players]
+        .map(p => ({ uid: p.uid, asset: calcPlayerAsset(p, gameState.prices) }))
+        .sort((a, b) => b.asset - a.asset);
+      const myRank = sorted.findIndex(p => p.uid === me.uid) + 1;
+      document.getElementById('hud-rank').textContent = anySecretActive ? '?위' : `${myRank}위`;
+      document.getElementById('hud-pieces').textContent = `${me.pieces} 개`;
+
+      document.getElementById('btn-piece-hint').disabled = me.pieces < 1 || gameState.round > 20 || gameState.unlockedCount >= 7;
+      document.getElementById('btn-piece-cash').disabled = me.pieces < 1 || gameState.round > 20;
+
+      const secBadge = document.getElementById('secret-status-badge');
+      if (me.secretUsed) {
+        secBadge.textContent = '시크릿 권한: 소진됨';
+        secBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500';
+      } else if (pendingSecretStock !== null) {
+        secBadge.textContent = `시크릿 예약: [${STOCK_NAMES[pendingSecretStock]}]`;
+        secBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400 text-amber-300 font-bold';
+      } else {
+        secBadge.textContent = '시크릿 권한: 사용 가능 (1회)';
+        secBadge.className = 'text-xs px-2.5 py-1 rounded-lg bg-zinc-900 border border-amber-500/30 text-amber-300 font-bold';
+      }
+
+      // 7개 종목 카드
+      const stocksGrid = document.getElementById('stocks-grid');
+      stocksGrid.innerHTML = STOCK_NAMES.map((name, i) => {
+        const isSecret = gameState.activeSecrets[i] > 0;
+        const price = gameState.prices[i];
+        const delta = gameState.prevDeltas[i];
+        const deltaColor = delta > 0 ? 'text-rose-400' : delta < 0 ? 'text-sky-400' : 'text-zinc-400';
+        const deltaSign = delta > 0 ? '+' : '';
+        const ord = pendingOrders[i];
+        const isSecretTarget = pendingSecretStock === i;
+
+        return `
+          <div class="rounded-xl bg-zinc-950/90 border ${isSecret ? 'border-amber-500/50' : 'border-zinc-800'} p-4 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-black text-white">${name}</span>
+                  <span class="text-[11px] px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-300 font-mono-num">보유 ${me.holdings[i]}주</span>
+                </div>
+                ${isSecret ? `
+                  <div class="mt-1.5 px-2 py-1 rounded classified-blur text-[11px] font-bold">
+                    CLASSIFIED (잔여 ${gameState.activeSecrets[i]}R)
+                  </div>
+                ` : `
+                  <div class="mt-1 flex items-baseline gap-2">
+                    <span class="text-lg font-black font-mono-num text-white">${price.toLocaleString()}원</span>
+                    <span class="text-xs font-mono-num font-bold ${deltaColor}">${deltaSign}${delta.toLocaleString()}원</span>
+                  </div>
+                `}
+              </div>
+              <div class="flex flex-col items-end gap-1">
+                ${isSecret ? '' : buildSparkline(gameState.priceHistory[i])}
+                ${!me.secretUsed ? `
+                  <button onclick="toggleSecretOnStock(${i})"
+                    class="text-[10px] px-2 py-0.5 rounded border ${isSecretTarget ? 'bg-amber-400 text-zinc-950 border-amber-300 font-black' : 'bg-zinc-900 text-amber-300/80 border-zinc-700 hover:border-amber-400'}">
+                    ${isSecretTarget ? '🔒 시크릿 지정됨' : '시크릿 걸기'}
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- 시장 수급 정보 -->
+            <div class="grid grid-cols-3 gap-1.5 text-[11px] bg-zinc-900/70 rounded-lg p-2 text-center font-mono-num">
+              <div>
+                <div class="text-zinc-500 text-[10px]">전체 보유총량</div>
+                <div class="text-zinc-200 font-bold">${isSecret ? '???' : gameState.currTotalHoldings[i] + '주'}</div>
+              </div>
+              <div>
+                <div class="text-zinc-500 text-[10px]">직전 매수량</div>
+                <div class="text-rose-300 font-bold">${isSecret ? '???' : gameState.lastRoundBuys[i] + '주'}</div>
+              </div>
+              <div>
+                <div class="text-zinc-500 text-[10px]">직전 매도량</div>
+                <div class="text-sky-300 font-bold">${isSecret ? '???' : gameState.lastRoundSells[i] + '주'}</div>
+              </div>
+            </div>
+
+            <!-- 주문 수량 조절 -->
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-1">
+                <button onclick="adjustOrder(${i}, -5)" class="px-2 py-1 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 text-xs font-mono-num font-bold">-5</button>
+                <button onclick="adjustOrder(${i}, -1)" class="px-2.5 py-1 rounded bg-sky-950/70 hover:bg-sky-900 text-sky-300 text-xs font-mono-num font-bold">-1</button>
+              </div>
+              <div class="text-xs font-mono-num font-bold ${ord > 0 ? 'text-rose-400' : ord < 0 ? 'text-sky-400' : 'text-zinc-500'}">
+                ${ord > 0 ? `매수 +${ord}주` : ord < 0 ? `매도 ${ord}주` : '주문 대기 0'}
+              </div>
+              <div class="flex items-center gap-1">
+                <button onclick="adjustOrder(${i}, 1)" class="px-2.5 py-1 rounded bg-rose-950/70 hover:bg-rose-900 text-rose-300 text-xs font-mono-num font-bold">+1</button>
+                <button onclick="adjustOrder(${i}, 5)" class="px-2 py-1 rounded bg-rose-950/70 hover:bg-rose-900 text-rose-300 text-xs font-mono-num font-bold">+5</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 해금된 규칙 목록
+      document.getElementById('unlocked-count').textContent = gameState.unlockedCount;
+      const unlockedIndices = gameState.revealOrder.slice(0, gameState.unlockedCount);
+      document.getElementById('rules-list').innerHTML = STOCK_NAMES.map((name, i) => {
+        const isUnlocked = unlockedIndices.includes(i);
+        return `
+          <div class="p-3 rounded-xl border ${isUnlocked ? 'bg-zinc-950 border-amber-500/30 text-zinc-200' : 'bg-zinc-950/40 border-zinc-800/80 text-zinc-500'}">
+            <div class="font-bold ${isUnlocked ? 'text-amber-300' : 'text-zinc-500'} mb-1">${name}</div>
+            <div>${isUnlocked ? dailyRules[i].text : '🔒 미공개 규칙 (라운드 진행 또는 피스로 해금)'}</div>
+          </div>
+        `;
+      }).join('');
+
+      // 주문 요약 및 예상 현금
+      let cashDelta = 0;
+      const orderLines = [];
+      for (let i = 0; i < 7; i++) {
+        const q = pendingOrders[i];
+        if (q !== 0) {
+          cashDelta += q * gameState.prices[i];
+          orderLines.push(
+            `<div class="flex justify-between ${q > 0 ? 'text-rose-300' : 'text-sky-300'}">
+              <span>${STOCK_NAMES[i]} ${q > 0 ? '매수' : '매도'} ${Math.abs(q)}주</span>
+              <span class="font-mono-num">${(Math.abs(q) * gameState.prices[i]).toLocaleString()}원</span>
+            </div>`
+          );
+        }
+      }
+      if (pendingSecretStock !== null) {
+        orderLines.push(`<div class="text-amber-300 font-bold">🔒 [${STOCK_NAMES[pendingSecretStock]}] 시크릿 발동 예약</div>`);
+      }
+
+      document.getElementById('order-summary-box').innerHTML = orderLines.length
+        ? orderLines.join('')
+        : '<div class="text-zinc-500">이번 라운드 예약된 매매 주문이 없습니다.</div>';
+
+      document.getElementById('projected-cash').textContent = `${(me.cash - cashDelta).toLocaleString()}원`;
+
+      const commitBtn = document.getElementById('btn-commit-round');
+      if (me.committed && gameState.roomCode) {
+        commitBtn.disabled = true;
+        commitBtn.textContent = '다른 플레이어의 확정을 기다리는 중...';
+      } else {
+        commitBtn.disabled = false;
+        commitBtn.textContent = gameState.round === gameState.maxRounds
+          ? '최종 24라운드 거래 확정 및 결과 보기 →'
+          : '라운드 거래 확정 및 정산 →';
+      }
+      document.getElementById('multi-sync-note').textContent = gameState.roomCode ? `방 코드: ${gameState.roomCode}` : '솔로 모드';
+
+      // 실시간 8인 순위
+      const rankingBoard = gameState.players
+        .map(p => ({ ...p, asset: calcPlayerAsset(p, gameState.prices) }))
+        .sort((a, b) => b.asset - a.asset);
+
+      document.getElementById('players-ranking-list').innerHTML = rankingBoard.map((p, idx) => {
+        const r = idx + 1;
+        const isMe = p.uid === me.uid;
+        return `
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg ${isMe ? 'bg-amber-500/15 border border-amber-500/40 text-amber-200 font-bold' : 'bg-zinc-950/70 text-zinc-300'}">
+            <div class="flex items-center gap-2">
+              <span class="font-mono-num w-5 ${r <= 4 ? 'text-emerald-400' : r === 8 ? 'text-rose-400' : 'text-zinc-400'}">${r}.</span>
+              <span>${escapeHtml(p.name)}</span>
+              ${p.isAI ? '' : '<span class="text-[10px] px-1.5 rounded bg-zinc-800 text-amber-300">USER</span>'}
+            </div>
+            <span class="font-mono-num">${anySecretActive ? 'CLASSIFIED' : p.asset.toLocaleString() + '원'}</span>
+          </div>
+        `;
+      }).join('');
+
+      // 로그
+      document.getElementById('game-log-box').innerHTML = gameState.logs
+        .slice(0, 30)
+        .map(line => `<div class="leading-relaxed border-b border-zinc-900 pb-1">${escapeHtml(line)}</div>`)
+        .join('');
+    }
+
+    function goHome() {
+      document.getElementById('result-modal').classList.add('hidden');
+      document.getElementById('screen-game').classList.add('hidden');
+      document.getElementById('screen-waiting').classList.add('hidden');
+      document.getElementById('screen-lobby').classList.remove('hidden');
+      renderLeaderboard();
+    }
+
+    function closeResultAndGoHome() {
+      goHome();
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    // 초기 부트스트랩
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('daily-seed-badge').textContent = `DAILY SEED · ${getTodayDateString()}`;
+      initFirebaseFromStorage();
+      updateUserUI();
+      renderLogoWaves();
+      renderLobbyStockPreview();
+      renderLeaderboard();
+    });
+  </script>
+</body>
+</html>
